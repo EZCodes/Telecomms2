@@ -4,47 +4,84 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
 
 public class Controller extends Machine {
-	final static int PUBLISHER_SOCKET = 50100;
-	final static String CONNECT_HEADER = "000MQTT|";
-	final static String CONNACK_HEADER = "001MQTT|";
-	final static String PUBLISH_HEADER = "010MQTT|";
-	final static String PUBACK_HEADER = "011MQTT|";
-	Publisher(int port){
+	final static int CONTROLLER_SOCKET = 50000;
+	final static int ROUTER_STARTING_SOCKET = 50001;
+	final static String HELLO_HEADER = "000|";
+	final static String HELLACK_HEADER = "001|";
+	final static String INFOREQUEST_HEADER = "010|";
+	final static String INFO_HEADER = "011|";
+	final static String INFOACK_HEADER = "111|";
+	final static int AMOUNT_OF_ROUTERS = 7;
+	private HashMap<String,ArrayList<String[]>> routingInfo;
+	private HashMap<String,InetSocketAddress> connectedRouters;
+	Controller(int port){
 		try {
 			socket = new DatagramSocket(port);
+			routingInfo = new HashMap<String,ArrayList<String[]>>(); //  "Src-Dst" -> Router -> [router][input(address)][output(address)] 
+			connectedRouters = new HashMap<String,InetSocketAddress>();
+			initializeRoutingTable();
+
 		} catch (SocketException e) 
 		{
-			if(port >= 51000)
-				e.printStackTrace();
-			else
-			{
-				port++;
-				try {
-					new Publisher(port).start();
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-			}
+			e.printStackTrace();
 		}
 		listener.go();
 	}
-	
+	void initializeRoutingTable() { // hardcoded controller configuration
+		ArrayList<String[]> temp;
+		temp = routingInfo.put("E1-E2", new ArrayList<String[]>()); 
+		String[] rout1 = {"R2","51000","50003"};
+		temp.add(rout1);
+		String[] rout2 = {"R3","50002","51001"};
+		temp.add(rout2);
+		temp = routingInfo.put("E1-E3", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E1-E4", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E1-E5", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E2-E3", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E2-E4", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E2-E5", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E3-E4", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E3-E5", new ArrayList<String[]>());
+			
+		temp = routingInfo.put("E4-E5", new ArrayList<String[]>());	
+								
+	}
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
 		try {
 			PacketContent recievedData = new PacketContent(recievedPacket);
 			String recievedString = recievedData.toString();
-			if(recievedString.contains(CONNACK_HEADER))
+			String[] packetInformation = recievedString.split("[|]");
+			if(recievedString.contains(HELLO_HEADER))
 			{
-				System.out.println("Connection with broker established!");
-				this.notify();
+				InetSocketAddress routerAddress = (InetSocketAddress) recievedPacket.getSocketAddress();
+				connectedRouters.put(packetInformation[1], routerAddress);
+				System.out.println("Connection with router: "+ packetInformation[1] + "established!");
+				
 			}
-			else if(recievedString.contains(PUBACK_HEADER))
+			else if(recievedString.contains(INFOREQUEST_HEADER))
 			{
-				System.out.println("Publishing successfull");
-				this.notify();
+				InetSocketAddress routerAddress = (InetSocketAddress) recievedPacket.getSocketAddress();
+				if(routerAddress.equals(connectedRouters.get(packetInformation[1]))) // small protection if external or dead router will want the info
+				{
+					ArrayList<String[]> table = routingInfo.get(packetInformation[2]);
+					PacketContent routAsString = new PacketContent(rout[0] +","+rout[1]);
+					DatagramPacket packetToSend = routAsString.toDatagramPacket();		
+					sendPacket(packetToSend,routerAddress);					
+				}
+				System.out.println("Routing information sent!");
 			}
 		}
 		catch(Exception e) {e.printStackTrace();}
@@ -58,10 +95,6 @@ public class Controller extends Machine {
 		
 	}
 	
-	public int decideDestinationSocket() // TODO
-	{
-		return 0;
-	}
 	
 	public synchronized void start() throws Exception {
 		DatagramPacket connectPacket = new PacketContent(CONNECT_HEADER).toDatagramPacket();;
@@ -99,7 +132,7 @@ public class Controller extends Machine {
 	
 	public static void main(String[] args) {
 		try {					
-			new Publisher(PUBLISHER_SOCKET).start();
+			new Controller(CONTROLLER_SOCKET).start();
 			System.out.println("Program completed");
 		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}

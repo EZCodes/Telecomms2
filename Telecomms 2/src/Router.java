@@ -9,13 +9,13 @@ import java.util.HashMap;
 
 public class Router extends Machine {
 
-	final static int BROKER_SOCKET = 50000;
-	final static String CONNECT_HEADER = "000MQTT|";
-	final static String CONNACK_HEADER = "001MQTT|";
-	final static String SUBSCRIBE_HEADER = "100MQTT|";
-	final static String SUBACK_HEADER = "101MQTT|";
-	final static String PUBLISH_HEADER = "010MQTT|";
-	final static String PUBACK_HEADER = "011MQTT|";
+	final static int ROUTER_SOCKET = 50001;
+	final static String CONNECT_HEADER = "000|";
+	final static String CONNACK_HEADER = "001|";
+	final static String SUBSCRIBE_HEADER = "100|";
+	final static String SUBACK_HEADER = "101|";
+	final static String PUBLISH_HEADER = "010|";
+	final static String PUBACK_HEADER = "011|";
 	private HashMap<String,ArrayList<InetSocketAddress>> subscribersByTopics;
 	
 	

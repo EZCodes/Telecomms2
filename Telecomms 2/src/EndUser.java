@@ -11,10 +11,6 @@ public class EndUser extends Machine {
 	final static int END_USER_SOCKET = 51000;
 	final static String SEND_HEADER = "000|";
 	final static String SENDACK_HEADER = "001|";
-
-
-
-
 	EndUser(int port){
 		try {
 			socket = new DatagramSocket(port);
@@ -36,7 +32,14 @@ public class EndUser extends Machine {
 	}
 	
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
-		// can do acks later of smth
+		PacketContent recievedData = new PacketContent(recievedPacket);
+		String recievedString = recievedData.toString();
+		//String[] packetInformation = recievedString.split("[|]");
+		if(recievedString.contains(SENDACK_HEADER))
+			System.out.println("Message succesfully sent!");
+		else
+			System.out.println("Unknown packet recieved " + recievedString );
+			
 	}
 		
 	public void sendPacket(DatagramPacket packetToSend, InetSocketAddress destination) { 
@@ -50,39 +53,27 @@ public class EndUser extends Machine {
 	
 	public synchronized void start() throws Exception {
 		DatagramPacket packetToSend;
-		InetAddress localHost = InetAddress.getLocalHost();
-		InetSocketAddress destination = new InetSocketAddress(localHost,50000);// manually set
-		sendPacket(connectPacket, destination);
-		System.out.println("Connection request sent!");
-		this.wait();		
+		InetAddress localhost = InetAddress.getLocalHost();	
 		Scanner input = new Scanner(System.in);
 		String inputString = "";
 		do
 		{
-			System.out.println("If you wish to subscribe please type 'Subscribe', if you wish to quit then type 'q'");
+			System.out.println("If you wish to send a message please type it here, if you wish to quit then type 'q'");
 			inputString = input.nextLine();
-			if(inputString.equals("Subscribe"))
-			{
-				System.out.println("Please enter a topic you want to subscribe to.");// need to set up max
-				inputString = input.nextLine();
-				inputString = SUBSCRIBE_HEADER + inputString + "|"; // adding '|' at the end for proper parsing at broker
-				subscription = new PacketContent(inputString).toDatagramPacket();
-				sendPacket(subscription, destination);
+			if(!inputString.equals("q")) {
+				inputString = SEND_HEADER + inputString + "|"; // adding '|' at the end for proper parsing
+				packetToSend = new PacketContent(inputString).toDatagramPacket();
+				InetSocketAddress destination = new InetSocketAddress(localhost,50002); //??? how to know where to send if multiple created???
+				sendPacket(packetToSend, destination);
 				this.wait();
 			}
-			else if(inputString.equals("listen"))
-			{
-				this.wait();
-			}
-			else if(!inputString.equals("q"))
-				System.out.println("Invalid command, please try again.");
 		}while(!inputString.equals("q"));
 		input.close();
 	}
 	
 	public static void main(String[] args) {
 		try {	
-			new EndUser(SUBSCRIBER_SOCKET).start();
+			new EndUser(END_USER_SOCKET).start();
 			System.out.println("Program completed");
 		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}
