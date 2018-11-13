@@ -9,15 +9,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
-public class Controller extends Machine {
-	final static int CONTROLLER_SOCKET = 50000;
-	final static int ROUTER_STARTING_SOCKET = 50001;
-	final static String HELLO_HEADER = "000|";
-	final static String HELLACK_HEADER = "001|";
-	final static String INFOREQUEST_HEADER = "010|";
-	final static String INFO_HEADER = "011|";
-	final static String INFOACK_HEADER = "111|";
-	final static int AMOUNT_OF_ROUTERS = 7;
+public class Controller extends Machine implements Constants {
+
 	private HashMap<String,ArrayList<String[]>> routingInfo;
 	private HashMap<String,InetSocketAddress> connectedRouters;
 	Controller(int port){

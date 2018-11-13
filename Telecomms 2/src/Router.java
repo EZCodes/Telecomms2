@@ -7,22 +7,17 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Router extends Machine {
-
-	final static int ROUTER_SOCKET = 50001;
-	final static String CONNECT_HEADER = "000|";
-	final static String CONNACK_HEADER = "001|";
-	final static String SUBSCRIBE_HEADER = "100|";
-	final static String SUBACK_HEADER = "101|";
-	final static String PUBLISH_HEADER = "010|";
-	final static String PUBACK_HEADER = "011|";
-	private HashMap<String,ArrayList<InetSocketAddress>> subscribersByTopics;
+public class Router extends Machine implements Constants {
+	
+	private HashMap<String,String> routingTable; // Dest -> Next Router
 	
 	
-	Broker(int port){
+	Router(int port){
 		try {
 			socket = new DatagramSocket(port);
-		} catch (SocketException e) 
+			routingTable = new HashMap<String,String>();
+			start();
+		} catch (Exception e) 
 		{
 			if(port >= 50100)
 				e.printStackTrace();
@@ -30,13 +25,12 @@ public class Router extends Machine {
 			{
 				port++;
 				try {
-					new Broker(port).start();
+					new Router(port).start();
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
 			}
 		}
-		subscribersByTopics = new HashMap<String,ArrayList<InetSocketAddress>>();
 		listener.go();
 	}
 	
@@ -45,49 +39,41 @@ public class Router extends Machine {
 			InetAddress localHost = InetAddress.getLocalHost();
 			PacketContent recievedData = new PacketContent(recievedPacket);
 			String recievedString = recievedData.toString();
-			if(recievedString.contains(CONNECT_HEADER))
+			if(recievedString.contains(HELLACK_HEADER))
 			{
-				InetSocketAddress destination =  (InetSocketAddress) recievedPacket.getSocketAddress();
-				DatagramPacket ack = new PacketContent(CONNACK_HEADER).toDatagramPacket();
-				sendPacket(ack,destination);
-				System.out.println("Connection request accepted!");
+				System.out.println("Connection to controller succesfully!");
+				this.notify();
 			}
-			else if(recievedString.contains(SUBSCRIBE_HEADER))
+			else if(recievedString.contains(INFO_HEADER))
 			{
 				InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
-				String[] recievedTopic = recievedString.split("[|]");
-				if(subscribersByTopics.containsKey(recievedTopic[1]))
-				{
-					subscribersByTopics.get(recievedTopic[1]).add(destination);
-				}
-				else
-				{
-					subscribersByTopics.put(recievedTopic[1], new ArrayList<InetSocketAddress>());
-					subscribersByTopics.get(recievedTopic[1]).add(destination);				
-				}
-				DatagramPacket ackPacket = new PacketContent(SUBACK_HEADER).toDatagramPacket();
-				System.out.println("Subscription request completed!");
+				String[] recievedInfo = recievedString.split("[|]");
+				routingTable.put(recievedInfo[1], recievedInfo[4]);
+				routingTable.put(recievedInfo[2], recievedInfo[3]);
+				DatagramPacket ackPacket = new PacketContent(INFOACK_HEADER).toDatagramPacket();
+				System.out.println("Routing Information recieived request completed!");
 				sendPacket(ackPacket,destination);				 
+				this.notify();
 			}
-			else if(recievedString.contains(PUBLISH_HEADER))
+			else if(recievedString.contains(SEND_HEADER))
 			{
 				InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
-				String[] recievedPublication = recievedString.split("[|]");
-				if(subscribersByTopics.containsKey(recievedPublication[1]))
+				String[] recievedInfo = recievedString.split("[|]");
+				if(!routingTable.containsKey(recievedInfo[1]))
 				{
-					ArrayList<InetSocketAddress> recipientAddresses = subscribersByTopics.get(recievedPublication[1]);
-					for(int i=0; i<recipientAddresses.size(); i++)
-					{
-						InetSocketAddress address = recipientAddresses.get(i);
-						sendPacket(recievedPacket,address);
-					}
+					DatagramPacket infoRequest = new PacketContent(INFOREQUEST_HEADER + "|" +recievedInfo[1]+ "|" ).toDatagramPacket();
+					InetSocketAddress controller = new InetSocketAddress(localHost,CONTROLLER_SOCKET);
+					sendPacket(infoRequest,controller);
+					this.wait();
 				}
-				else
-					System.out.println("No such key found");
-				
-				System.out.println("Publish request completed!");
-				DatagramPacket puback = new PacketContent(PUBACK_HEADER).toDatagramPacket();				
-				sendPacket(puback,destination);				
+				String nextDestString = routingTable.get(recievedInfo[1]);
+				int nextRouterSocket = Integer.parseInt(nextDestString);
+				InetSocketAddress nextHop = new InetSocketAddress(localHost,nextRouterSocket);
+				sendPacket(recievedPacket,nextHop);
+				//add timers. TODO			
+				System.out.println("Send request completed!");
+				DatagramPacket sendack = new PacketContent(SENDACK_HEADER).toDatagramPacket();				
+				sendPacket(sendack,destination);				
 			}
 			else
 			{
@@ -99,27 +85,24 @@ public class Router extends Machine {
 		catch(Exception e) {e.printStackTrace();}
 	}
 		
-	public void sendPacket(DatagramPacket packetToSend,InetSocketAddress destination) { // look into what it does
+	public void sendPacket(DatagramPacket packetToSend,InetSocketAddress destination) { 
 		try {
-			packetToSend.setSocketAddress(destination); // set address yourself
+			packetToSend.setSocketAddress(destination); 
 			socket.send(packetToSend);
 		} catch (IOException e) {	e.printStackTrace(); }
 		
 	}
 	
-	public int decideDestinationSocket() // TODO
-	{
-		return 0;
-	}
 	
-	public synchronized void start() throws Exception {
-		System.out.println("Waiting for contact");
+	public synchronized void start() throws Exception { // hardcoded address of controller
+		
+		//Hello messages TODO
+		
 		this.wait();
 	}
 	
 	public static void main(String[] args) {
 		try {					
-			new Broker(BROKER_SOCKET).start();
 			System.out.println("Program completed");
 		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}
