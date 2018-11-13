@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
 
 public class Router extends Machine implements Constants {
 	
@@ -41,7 +42,7 @@ public class Router extends Machine implements Constants {
 			String recievedString = recievedData.toString();
 			if(recievedString.contains(HELLACK_HEADER))
 			{
-				System.out.println("Connection to controller succesfully!");
+				System.out.println("Connected to controller succesfully!");
 				this.notify();
 			}
 			else if(recievedString.contains(INFO_HEADER))
@@ -95,9 +96,19 @@ public class Router extends Machine implements Constants {
 	
 	
 	public synchronized void start() throws Exception { // hardcoded address of controller
+		Timer timer = new Timer(true);
 		
-		//Hello messages TODO
+		DatagramPacket connectPacket = new PacketContent(HELLO_HEADER).toDatagramPacket();
+		InetAddress localHost;
+		localHost = InetAddress.getLocalHost();
+		InetSocketAddress destination = new InetSocketAddress(localHost,50000);// manually set
+		sendPacket(connectPacket, destination);
+		System.out.println("Connection request sent!");
 		
+		TimeoutTimer task = new TimeoutTimer(this,connectPacket, destination);
+		timer.schedule(task, 7000,7000); // 7 sec timeout timer
+		this.wait();
+		task.cancel();
 		this.wait();
 	}
 	

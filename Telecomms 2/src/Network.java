@@ -3,7 +3,7 @@ public class Network implements Constants {
 
 
 	
-	Network(int amountOfRouters, int amountOfEndUsers){
+	Network(int amountOfRouters, int amountOfEndUsers){ // use constants
 		for(int i = 0; i<amountOfRouters; i++)
 		{
 			new Router(STARTING_ROUTER_PORT + i);
