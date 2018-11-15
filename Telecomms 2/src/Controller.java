@@ -11,7 +11,7 @@ import java.util.Scanner;
 
 public class Controller extends Machine implements Constants {
 
-	private HashMap<String,ArrayList<String[]>> routingInfo;
+	private HashMap<String, RoutingInfo> routingInfo; // Router -> it's surroundings
 	private HashMap<String,InetSocketAddress> connectedRouters;
 	Controller(int port){
 		try {

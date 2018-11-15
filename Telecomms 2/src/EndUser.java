@@ -37,6 +37,13 @@ public class EndUser extends Machine implements Constants {
 		String recievedString = recievedData.toString();
 		if(recievedString.contains(SENDACK_HEADER))
 			System.out.println("Message succesfully sent!");
+		else if(recievedString.contains(FORWARD_HEADER)) {
+			InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
+			DatagramPacket ack = new PacketContent(FORACK_HEADER).toDatagramPacket();
+			sendPacket(ack,destination);
+			String[] stringContent = recievedString.split("[|]");
+			System.out.println("You recieved a message!\n"+ stringContent[3]);
+		}
 		else
 			System.out.println("Unknown packet recieved " + recievedString );
 			

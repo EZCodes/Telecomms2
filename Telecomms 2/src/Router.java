@@ -10,27 +10,20 @@ import java.util.Timer;
 
 public class Router extends Machine implements Constants {
 	
-	private HashMap<String,String> routingTable; // Dest -> Next Router
+	private HashMap<String,String> routingTable; // Dest -> Next Router Socket
+	private RoutingInfo neighbourList; 
 	
 	
-	Router(int port){
+	Router(int port,RoutingInfo neighbourList){
 		try {
+			this.neighbourList = neighbourList;
 			socket = new DatagramSocket(port);
 			routingTable = new HashMap<String,String>();
 			start();
 		} catch (Exception e) 
 		{
-			if(port >= 50100)
-				e.printStackTrace();
-			else
-			{
-				port++;
-				try {
-					new Router(port).start();
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-			}
+			System.out.println("Failed to allocate sockets, try different ones.");
+			e.printStackTrace();
 		}
 		listener.go();
 	}
@@ -43,6 +36,31 @@ public class Router extends Machine implements Constants {
 			if(recievedString.contains(HELLACK_HEADER))
 			{
 				System.out.println("Connected to controller succesfully!");
+				this.notify();
+			}
+			else if(recievedString.contains(FORWARD_HEADER)) // routing info should've been received at this point
+			{
+				InetSocketAddress ackDestination = (InetSocketAddress) recievedPacket.getSocketAddress();
+				DatagramPacket ack = new PacketContent(FORACK_HEADER).toDatagramPacket();
+				String[] recievedInfo = recievedString.split("[|]");
+				String nextHopAddress = routingTable.get(recievedInfo[2]);
+				InetSocketAddress destination = new InetSocketAddress(localHost, Integer.parseInt(nextHopAddress));
+				sendPacket(recievedPacket,destination);
+				sendPacket(ack,ackDestination);
+				this.wait();
+			}
+			else if(recievedString.contains(FORACK_HEADER))
+			{
+				System.out.println("Message forwarded succesfully!");
+				this.notify();
+			}
+			else if(recievedString.contains(FEATURE_REQUEST_HEADER))
+			{
+				//TODO
+			}
+			else if(recievedString.contains(FEATACK_HEADER))
+			{
+				System.out.println("Feature exchange completed succesfully!");
 				this.notify();
 			}
 			else if(recievedString.contains(INFO_HEADER))
@@ -59,6 +77,8 @@ public class Router extends Machine implements Constants {
 			else if(recievedString.contains(SEND_HEADER))
 			{
 				InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
+				if(this.neighbourList.endUserSocket == null)
+					this.neighbourList.endUserSocket = destination;
 				String[] recievedInfo = recievedString.split("[|]");
 				if(!routingTable.containsKey(recievedInfo[1]))
 				{
