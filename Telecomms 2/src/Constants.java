@@ -8,9 +8,6 @@ public interface Constants {
 	final static String FEATURE_HEADER = "01|";
 	final static String FEATACK_HEADER = "10|";
 	
-	final static String FORWARD_HEADER = "101|"; 
-	final static String FORACK_HEADER = "100|";
-	
 	final static String INFOREQUEST_HEADER = "010|";
 	final static String INFO_HEADER = "011|"; // |Source|Destination|NextHop|PrevHop|
 	final static String INFOACK_HEADER = "111|";
@@ -25,4 +22,6 @@ public interface Constants {
 	
 	final static int NUMBER_OF_ROUTERS = 7;
 	final static int NUMBER_OF_END_USERS = 4;
+	
+	final static int TIMEOUT_TIME = 7000;
 }

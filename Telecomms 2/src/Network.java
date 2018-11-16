@@ -4,17 +4,23 @@ public class Network implements Constants {
 
 	
 	Network(int amountOfRouters, int amountOfEndUsers){ 
-		for(int i = 0; i<amountOfRouters; i++)
-		{
-			RoutingInfo neighbours = decideNeighbours(STARTING_ROUTER_PORT + i);
-			new Router(STARTING_ROUTER_PORT + i, neighbours);
+		try {
+			for(int i = 0; i<amountOfRouters; i++)
+			{
+				RoutingInfo neighbours = decideNeighbours(STARTING_ROUTER_PORT + i);
+				new Router(STARTING_ROUTER_PORT + i, neighbours).start();;
+			}
+			for(int i = 0; i<amountOfEndUsers; i++)
+			{
+				int offset = 0;
+				new EndUser(STARTING_END_USER_PORT, STARTING_ROUTER_PORT + offset).start();
+				offset += 2;
+			}
+			new Controller(CONTROLLER_SOCKET).start();
 		}
-		for(int i = 0; i<amountOfEndUsers; i++)
-		{
-			int offset = 0;
-			new EndUser(STARTING_END_USER_PORT, STARTING_ROUTER_PORT + offset);
-			offset += 2;
-		}		
+		catch(Exception e) {
+			e.printStackTrace();
+		};
 	}
 	/**
 	 * This method defines the network topology. Instead of hardcoding every rout in the controller
@@ -30,38 +36,42 @@ public class Network implements Constants {
 			String[] connectionOne = {"R2", Integer.toString(STARTING_ROUTER_PORT+1)};
 			String[] connectionTwo = {"R6", Integer.toString(STARTING_ROUTER_PORT+5)};
 			String[] connectionThree = {"R7", Integer.toString(STARTING_ROUTER_PORT+6)};
-			return new RoutingInfo(connectionOne,connectionTwo,connectionThree);
+			String endUserName = "E1";
+			return new RoutingInfo(connectionOne,connectionTwo,connectionThree,endUserName);
 		}
 		if(socketNumber==STARTING_ROUTER_PORT+1) {
 			String[] connectionOne = {"R1", Integer.toString(STARTING_ROUTER_PORT+1)};
 			String[] connectionTwo = {"R3", Integer.toString(STARTING_ROUTER_PORT+2)};
-			return new RoutingInfo(connectionOne,connectionTwo);
+			return new RoutingInfo(connectionOne,connectionTwo,null);
 		}
 		if(socketNumber==STARTING_ROUTER_PORT+2) {
 			String[] connectionOne = {"R2", Integer.toString(STARTING_ROUTER_PORT+1)};
 			String[] connectionTwo = {"R4", Integer.toString(STARTING_ROUTER_PORT+3)};
-			return new RoutingInfo(connectionOne,connectionTwo);
+			String endUserName = "E2";
+			return new RoutingInfo(connectionOne,connectionTwo, endUserName);		
 		}
 		if(socketNumber==STARTING_ROUTER_PORT+3) {
 			String[] connectionOne = {"R3", Integer.toString(STARTING_ROUTER_PORT+2)};
 			String[] connectionTwo = {"R7", Integer.toString(STARTING_ROUTER_PORT+6)};
 			String[] connectionThree = {"R5", Integer.toString(STARTING_ROUTER_PORT+4)};
-			return new RoutingInfo(connectionOne,connectionTwo,connectionThree);
+			return new RoutingInfo(connectionOne,connectionTwo,connectionThree,null);
 		}
 		if(socketNumber==STARTING_ROUTER_PORT+4) {
 			String[] connectionOne = {"R4", Integer.toString(STARTING_ROUTER_PORT+1)};
 			String[] connectionTwo = {"R6", Integer.toString(STARTING_ROUTER_PORT+5)};
-			return new RoutingInfo(connectionOne,connectionTwo);
+			String endUserName = "E3";
+			return new RoutingInfo(connectionOne,connectionTwo, endUserName);
 		}
 		if(socketNumber==STARTING_ROUTER_PORT+5) {
 			String[] connectionOne = {"R1", Integer.toString(STARTING_ROUTER_PORT)};
 			String[] connectionTwo = {"R5", Integer.toString(STARTING_ROUTER_PORT+4)};
-			return new RoutingInfo(connectionOne,connectionTwo);
+			return new RoutingInfo(connectionOne,connectionTwo,null);
 		}
 		else { //(socketNumber==STARTING_ROUTER_PORT+6) so java wont complain
 			String[] connectionOne = {"R1", Integer.toString(STARTING_ROUTER_PORT)};
 			String[] connectionTwo = {"R4", Integer.toString(STARTING_ROUTER_PORT+3)};
-			return new RoutingInfo(connectionOne,connectionTwo);
+			String endUserName = "E4";
+			return new RoutingInfo(connectionOne,connectionTwo, endUserName);
 		}	
 	}	
 	

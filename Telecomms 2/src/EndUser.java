@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.Scanner;
+import java.util.Timer;
 
 public class EndUser extends Machine implements Constants {
 
@@ -14,7 +15,6 @@ public class EndUser extends Machine implements Constants {
 			InetAddress localhost = InetAddress.getLocalHost();
 			socket = new DatagramSocket(port);
 			neighbouringRouter = new InetSocketAddress(localhost, routerPort);
-			start();
 		} catch (Exception e) 
 		{
 			if(port >= 60000)
@@ -36,10 +36,13 @@ public class EndUser extends Machine implements Constants {
 		PacketContent recievedData = new PacketContent(recievedPacket);
 		String recievedString = recievedData.toString();
 		if(recievedString.contains(SENDACK_HEADER))
+		{
 			System.out.println("Message succesfully sent!");
-		else if(recievedString.contains(FORWARD_HEADER)) {
+			this.notify();
+		}
+		else if(recievedString.contains(SEND_HEADER)) {
 			InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
-			DatagramPacket ack = new PacketContent(FORACK_HEADER).toDatagramPacket();
+			DatagramPacket ack = new PacketContent(SENDACK_HEADER).toDatagramPacket();
 			sendPacket(ack,destination);
 			String[] stringContent = recievedString.split("[|]");
 			System.out.println("You recieved a message!\n"+ stringContent[3]);
@@ -60,6 +63,7 @@ public class EndUser extends Machine implements Constants {
 	
 	public synchronized void start() throws Exception {
 		DatagramPacket packetToSend;
+		Timer timer = new Timer(true);
 		Scanner input = new Scanner(System.in);
 		String inputString = "";
 		do
@@ -73,16 +77,14 @@ public class EndUser extends Machine implements Constants {
 				packetToSend = new PacketContent(inputString).toDatagramPacket();
 				InetSocketAddress destination = neighbouringRouter; 
 				sendPacket(packetToSend, destination);
+				TimeoutTimer task = new TimeoutTimer(this,packetToSend, destination);
+				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 				this.wait();
+				timer.cancel();	
 			}
 		}while(!inputString.equals("q"));
 		input.close();
 	}
 	
-	public static void main(String[] args) {
-		try {	
-			System.out.println("Program completed");
-		} catch(java.lang.Exception e) {e.printStackTrace();}
-	}
 
 }
