@@ -71,7 +71,7 @@ public class Router extends Machine implements Constants {
 			{
 				InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
 				String[] recievedInfo = recievedString.split("[|]");
-				routingTable.put(recievedInfo[1], recievedInfo[2]);
+				routingTable.put(recievedInfo[1], recievedInfo[2]); // TODO check for 0, if 0 drop packet and drop users packet.
 				//routingTable.put(recievedInfo[2], recievedInfo[3]) // return address;
 				DatagramPacket ackPacket = new PacketContent(INFOACK_HEADER).toDatagramPacket();
 				System.out.println("Routing Information recieived!");
@@ -94,7 +94,7 @@ public class Router extends Machine implements Constants {
 					this.wait();
 					timer.cancel();
 				}
-				String nextDestString = routingTable.get(recievedInfo[1]);
+				String nextDestString = routingTable.get(recievedInfo[1]); // TODO address from controller is router number, find socket yourself
 				int nextRouterSocket = Integer.parseInt(nextDestString);
 				InetSocketAddress nextHop = new InetSocketAddress(localHost,nextRouterSocket);
 				sendPacket(recievedPacket,nextHop);

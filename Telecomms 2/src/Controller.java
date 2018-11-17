@@ -31,14 +31,47 @@ public class Controller extends Machine implements Constants { // TODO add timer
 	 * @param destination
 	 * @return HashMap where Router->Next hop socket number(from that router)
 	 */
-	HashMap<String,String> calculateRout(String destination,String startRouter) { // the method calculating rout
-		HashMap<String,String> map = new HashMap<String,String>();
+	HashMap<String,String> calculateRout(String destination,String startRouter) { // the method calculating rout using BFS(modified)
+		HashMap<String,String> map = new HashMap<String,String>(); // doing it in a map so it can support other types if needed
 		
+		HashMap<String,String> precedessors = new HashMap<String,String>();
+		ArrayList<String> queue = new ArrayList<String>();
+		precedessors = calculateRoutRecursive(destination,startRouter, precedessors, queue);
+		
+		String value;
+		String key = destination;
+		
+		while(key != startRouter)
+		{
+			value = precedessors.get(destination);
+			map.put(value, key);
+			key = value;
+		}
 		return map;
 	}
-	HashMap<String,String> calculateRoutRecursive(HashMap<String,String> map, String destination, String currentMachine){ 
-		
-		return null;
+	HashMap<String,String> calculateRoutRecursive( String destination, String currentMachine, HashMap<String,String> precedessor, ArrayList<String> queue){ //stack may overflow in extreme cases
+		if(currentMachine != destination && !queue.isEmpty())
+		{
+			ArrayList<String> neighbours = routingInfo.get(currentMachine);
+			// sometime a current machine will be EndUser, so additional check for null is needed(inside for to less confuse with if's)
+			for(int i=0;neighbours != null && i<neighbours.size(); i++ ) 
+			{
+				if(!precedessor.containsKey(neighbours.get(i)))
+					precedessor.put(neighbours.get(i), currentMachine);
+				queue.add(neighbours.get(i));
+			}
+			String nextMachine;
+			do {
+			nextMachine = queue.remove(0);
+			}while(precedessor.containsValue(nextMachine)); // if visited go next
+			return calculateRoutRecursive(destination,nextMachine, precedessor,queue);
+		}
+		else if(currentMachine == destination)
+		{
+			return precedessor;
+		}
+		else
+			return null;
 	}
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
 		try {
@@ -64,15 +97,23 @@ public class Controller extends Machine implements Constants { // TODO add timer
 				if(routerAddress.equals(connectedRouters.get(routerNumber))) // small protection if external or dead router will want the info
 				{
 					String finalDestination = packetInformation[1];
-					HashMap<String,String> map = calculateRout(finalDestination, routerNumber);
-					String[] routers = map.keySet().toArray(new String[map.size()]); // getting keys out of map to iterate through them
-					for(int i =0; i<routers.length ; i++)
+					HashMap<String,String> map = calculateRout(finalDestination, routerNumber); 
+					if(map == null)// if end user is not in topology, send order to drop packet
 					{
-						InetSocketAddress destination = connectedRouters.get(routers[i]);
-						String nextHopSocket = map.get(routers[i]);
-						DatagramPacket packetToSend = new PacketContent(INFO_HEADER+finalDestination+"|"+nextHopSocket+"|").toDatagramPacket();		
-						sendPacket(packetToSend,destination);	
+						DatagramPacket packetToSend = new PacketContent(INFO_HEADER+"0|").toDatagramPacket();		
+						sendPacket(packetToSend,routerAddress);	
 						this.wait();
+					}
+					else {
+						String[] routers = map.keySet().toArray(new String[map.size()]); // getting keys out of map to iterate through them
+						for(int i =0; i<routers.length ; i++)
+						{
+							InetSocketAddress destination = connectedRouters.get(routers[i]);
+							String nextHop = map.get(routers[i]);
+							DatagramPacket packetToSend = new PacketContent(INFO_HEADER+finalDestination+"|"+nextHop+"|").toDatagramPacket();		
+							sendPacket(packetToSend,destination);	
+							this.wait();
+						}
 					}
 				}
 				else
