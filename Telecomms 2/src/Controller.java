@@ -11,7 +11,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.Timer;
 
-public class Controller extends Machine implements Constants { // TODO add timers
+public class Controller extends Machine implements Constants { // TODO fix timers(probably need another thread
 
 	private HashMap<String, ArrayList<String>> routingInfo; // Router -> it's surroundings
 	private HashMap<String,InetSocketAddress> connectedRouters;
@@ -102,7 +102,10 @@ public class Controller extends Machine implements Constants { // TODO add timer
 					{
 						DatagramPacket packetToSend = new PacketContent(INFO_HEADER+"0|").toDatagramPacket();		
 						sendPacket(packetToSend,routerAddress);	
+						TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
+						timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 						this.wait();
+						timer.cancel();
 					}
 					else {
 						String[] routers = map.keySet().toArray(new String[map.size()]); // getting keys out of map to iterate through them
@@ -112,7 +115,10 @@ public class Controller extends Machine implements Constants { // TODO add timer
 							String nextHop = map.get(routers[i]);
 							DatagramPacket packetToSend = new PacketContent(INFO_HEADER+finalDestination+"|"+nextHop+"|").toDatagramPacket();		
 							sendPacket(packetToSend,destination);	
+							TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
+							timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 							this.wait();
+							timer.cancel();
 						}
 					}
 				}
