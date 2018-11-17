@@ -71,10 +71,10 @@ public class Router extends Machine implements Constants {
 			{
 				InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
 				String[] recievedInfo = recievedString.split("[|]");
-				routingTable.put(recievedInfo[1], recievedInfo[4]);
-				routingTable.put(recievedInfo[2], recievedInfo[3]);
+				routingTable.put(recievedInfo[1], recievedInfo[2]);
+				//routingTable.put(recievedInfo[2], recievedInfo[3]) // return address;
 				DatagramPacket ackPacket = new PacketContent(INFOACK_HEADER).toDatagramPacket();
-				System.out.println("Routing Information recieived request completed!");
+				System.out.println("Routing Information recieived!");
 				sendPacket(ackPacket,destination);				 
 				this.notify();
 			}
