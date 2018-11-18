@@ -5,6 +5,8 @@ public class Network implements Constants {
 	
 	Network(int amountOfRouters, int amountOfEndUsers){ 
 		try {
+			new Controller(CONTROLLER_SOCKET).start();
+			
 			for(int i = 0; i<amountOfRouters; i++)
 			{
 				RoutingInfo neighbours = decideNeighbours(STARTING_ROUTER_PORT + i);
@@ -16,7 +18,7 @@ public class Network implements Constants {
 				new EndUser(STARTING_END_USER_PORT, STARTING_ROUTER_PORT + offset).start();
 				offset += 2;
 			}
-			new Controller(CONTROLLER_SOCKET).start();
+			
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -76,7 +78,7 @@ public class Network implements Constants {
 	}	
 	
 	
-	public void main(String args[])
+	public static void main(String args[])
 	{
 		new Network(NUMBER_OF_ROUTERS,NUMBER_OF_END_USERS);
 	}

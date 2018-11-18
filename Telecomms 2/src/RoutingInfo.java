@@ -22,4 +22,16 @@ public class RoutingInfo {
 		this.endUserSocket= null;
 		this.endUserName = endUserName;
 	}
+	
+	public String getSocketNumber(String routerNumber) {
+		if(connectionOne != null && connectionOne[0].equals(routerNumber))
+			return connectionOne[1];
+		else if(connectionTwo != null && connectionTwo[0].equals(routerNumber))
+			return connectionTwo[1];
+		else if(connectionThree != null && connectionThree[0].equals(routerNumber))
+			return connectionThree[1];
+		else 
+			return null;
+		
+	}
 }

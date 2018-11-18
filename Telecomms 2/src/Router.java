@@ -7,7 +7,7 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Timer;
 
-public class Router extends Machine implements Constants { // TODO fix timers(another thread) + fix other TODO's
+public class Router extends Machine implements Constants { // TODO fix timers(another thread) 
 	
 	private HashMap<String,String> routingTable; // Dest -> Next Router Socket 
 	private RoutingInfo neighbourList; 
@@ -98,17 +98,25 @@ public class Router extends Machine implements Constants { // TODO fix timers(an
 					this.wait();
 					timer.cancel();
 				}
-				String nextDestString = routingTable.get(recievedInfo[1]); // TODO address from controller is router number, find socket yourself, drop if no rout is found
-				int nextRouterSocket = Integer.parseInt(nextDestString);
-				InetSocketAddress nextHop = new InetSocketAddress(localHost,nextRouterSocket);
-				sendPacket(recievedPacket,nextHop);
+				String nextDestRouter = routingTable.get(recievedInfo[1]); 
+				if(nextDestRouter == null)
+				{
+					System.out.println("Destination not found, dropping packet.");
+				}
+				else {
+					String nextDestSocket = neighbourList.getSocketNumber(nextDestRouter);
+					int nextRouterSocket = Integer.parseInt(nextDestSocket);
+					InetSocketAddress nextHop = new InetSocketAddress(localHost,nextRouterSocket);
+					sendPacket(recievedPacket,nextHop);
+				}
 				TimeoutTimer task = new TimeoutTimer(this,recievedPacket, destination);
 				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 				this.wait();
 				timer.cancel();			
 				System.out.println("Send request completed!");
 				DatagramPacket sendack = new PacketContent(SENDACK_HEADER).toDatagramPacket();				
-				sendPacket(sendack,destination);				
+				sendPacket(sendack,destination);
+				
 			}
 			else
 			{
