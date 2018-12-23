@@ -17,14 +17,35 @@ public class TimeoutTimer extends TimerTask {
 
 	@Override
 	public void run() {
-		
-		System.out.println("Connection timeout! Trying to resend.");
+		if(!(machine instanceof Network))
+				System.out.println("Connection timeout! Trying to resend.");
 		Router router;
+		Controller controller;
+		EndUser endUser;
+		Network network;
 
 		if(machine instanceof Router)
 		{
 			router = (Router) machine;
 			router.sendPacket(packet, address);
+		}
+		else if(machine instanceof Controller)
+		{
+			controller = (Controller) machine;
+			controller.sendPacket(packet, address);
+		}
+		else if(machine instanceof EndUser)
+		{
+			endUser = (EndUser) machine;
+			endUser.sendPacket(packet, address);
+		}
+		else if(machine instanceof Network)
+		{
+			network = (Network) machine;
+			synchronized(network)
+			{
+				network.notify();
+			}
 		}
 
 					

@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.Timer;
 
 public class Controller extends Machine implements Constants { // TODO fix timers(probably need another thread
-
+	
 	private HashMap<String, ArrayList<String>> routingInfo; // Router -> it's surroundings
 	private HashMap<String,InetSocketAddress> connectedRouters;
 	Controller(int port){
@@ -76,7 +76,6 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
 		try {
 			Timer timer = new Timer(true);			
-			InetAddress localHost = InetAddress.getLocalHost();
 			PacketContent recievedData = new PacketContent(recievedPacket);
 			String recievedString = recievedData.toString();
 			String[] packetInformation = recievedString.split("[|]");
@@ -84,10 +83,11 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 			{
 				InetSocketAddress routerAddress = (InetSocketAddress) recievedPacket.getSocketAddress();
 				int routerPort = routerAddress.getPort();
-				String routerNumber = "R" + Integer.toString((routerPort%STARTING_ROUTER_PORT)+1);
+				String routerNumber = "R" + Integer.toString((routerPort%STARTING_ROUTER_PORT)+1); // getting number of router
 				connectedRouters.put(routerNumber, routerAddress);
-				System.out.println("Connection with router: "+ routerNumber + "established!");
-				
+				System.out.println("Connection with router: "+ routerNumber + ", established!");
+				DatagramPacket ack = new PacketContent(HELLACK_HEADER).toDatagramPacket();
+				sendPacket(ack,routerAddress);
 			}
 			else if(recievedString.contains(INFOREQUEST_HEADER))
 			{
@@ -173,6 +173,13 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 		System.out.println("Controller online!");
 		this.wait();
 		System.out.println("Controller going offline");
+	}
+	
+	public static void main(String[] args) {
+		try {		
+			new Controller(CONTROLLER_SOCKET).start();
+			System.out.println("Program completed(controller)");
+		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}
 	
 

@@ -1,23 +1,30 @@
+import java.util.Timer;
 
 // class for creating routers
-public class Network implements Constants {
+public class Network implements Constants { 
 
 	
 	Network(int amountOfRouters, int amountOfEndUsers){ 
 		try {
-			new Controller(CONTROLLER_SOCKET).start();
-			
+			Timer timer = new Timer(true);
+			new NodeThreads(CONTROLLER).start();
 			for(int i = 0; i<amountOfRouters; i++)
 			{
-				RoutingInfo neighbours = decideNeighbours(STARTING_ROUTER_PORT + i);
-				new Router(STARTING_ROUTER_PORT + i, neighbours).start();;
+				new NodeThreads(ROUTER).start();
+				// set a delay since creation of network is in separate threads which are non-deterministic and in this case routers 
+				// need to have sockets one after another
+				TimeoutTimer delay = new TimeoutTimer(this,null,null); 
+				timer.schedule(delay,1500);
+				synchronized(this) {
+					this.wait();		
+				}
+				delay.cancel();			
 			}
-			for(int i = 0; i<amountOfEndUsers; i++)
+			/*for(int i = 0; i<amountOfEndUsers; i++) // end user setup
 			{
-				int offset = 0;
-				new EndUser(STARTING_END_USER_PORT, STARTING_ROUTER_PORT + offset).start();
-				offset += 2;
+				new NodeThreads(END_USER).start();
 			}
+			*/
 			
 		}
 		catch(Exception e) {
@@ -32,8 +39,8 @@ public class Network implements Constants {
 	 * It's inefficient if we have low amount of End Users but a lot of routers, but very efficient if we have
 	 * a lot of EndUsers and less routers(more probable imo).
 	 */
-	private RoutingInfo decideNeighbours(int socketNumber){
-		// if over switch since i want to reinitialise with same name
+	 static RoutingInfo decideNeighbours(int socketNumber){
+		// 'if' over 'switch' since i want to reinitialise with same name
 		if(socketNumber==STARTING_ROUTER_PORT) {
 			String[] connectionOne = {"R2", Integer.toString(STARTING_ROUTER_PORT+1)};
 			String[] connectionTwo = {"R6", Integer.toString(STARTING_ROUTER_PORT+5)};
@@ -81,6 +88,7 @@ public class Network implements Constants {
 	public static void main(String args[])
 	{
 		new Network(NUMBER_OF_ROUTERS,NUMBER_OF_END_USERS);
+		System.out.println("Network setup completed!");
 	}
 	
 }

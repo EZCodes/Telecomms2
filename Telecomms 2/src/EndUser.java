@@ -6,30 +6,34 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.Scanner;
 import java.util.Timer;
-
+// need to manually start those when using default console
 public class EndUser extends Machine implements Constants {
 
 	InetSocketAddress neighbouringRouter;
-	EndUser(int port, int routerPort){
+	static int currentEndUserSocket = STARTING_END_USER_PORT;
+	private static int offset = 0; // variable to indicate a neighbouring router when creating is required
+	EndUser(int port){
 		try {
 			InetAddress localhost = InetAddress.getLocalHost();
 			socket = new DatagramSocket(port);
-			neighbouringRouter = new InetSocketAddress(localhost, routerPort);
+			neighbouringRouter = new InetSocketAddress(localhost, STARTING_ROUTER_PORT + offset);
+			System.out.println(currentEndUserSocket);
 		} catch (Exception e) 
 		{
 			if(port >= 60000)
 				e.printStackTrace();
 			else
-			{
-				port++;
+			{				
 				try {
-					new EndUser(port, routerPort).start();
+					new EndUser(++currentEndUserSocket).start(); // try next socket
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
 			}
 		}
 		listener.go();
+		offset += 2;
+		currentEndUserSocket++;
 	}
 	
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
@@ -84,6 +88,13 @@ public class EndUser extends Machine implements Constants {
 			}
 		}while(!inputString.equals("q"));
 		input.close();
+	}
+	
+	public static void main(String[] args) {
+		try {	
+			new EndUser(currentEndUserSocket).start();
+			System.out.println("Program completed(end user)");
+		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}
 	
 

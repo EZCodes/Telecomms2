@@ -7,24 +7,27 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Timer;
 
-public class Router extends Machine implements Constants { // TODO fix timers(another thread) 
+public class Router extends Machine implements Constants { // TODO send feature after hellack fix timers(another thread) 
+	
+	static int currentRouterSocket = STARTING_ROUTER_PORT;
 	
 	private HashMap<String,String> routingTable; // Dest -> Next Router Socket 
 	private RoutingInfo neighbourList; 
 	
 	
-	Router(int port,RoutingInfo neighbourList){
+	Router(int port){
 		try {
-			this.neighbourList = neighbourList;
+			this.neighbourList = Network.decideNeighbours(port);
 			socket = new DatagramSocket(port);
 			routingTable = new HashMap<String,String>();
-			start();
 		} catch (Exception e) 
 		{
 			System.out.println("Failed to allocate sockets, try different ones.");
 			e.printStackTrace();
 		}
 		listener.go();
+		currentRouterSocket++;
+		System.out.println(currentRouterSocket);
 	}
 	
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
@@ -146,17 +149,17 @@ public class Router extends Machine implements Constants { // TODO fix timers(an
 		InetSocketAddress destination = new InetSocketAddress(localHost,CONTROLLER_SOCKET);// manually set
 		sendPacket(connectPacket, destination);
 		System.out.println("Connection request sent!");
-		
 		TimeoutTimer task = new TimeoutTimer(this,connectPacket, destination);
 		timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 		this.wait();
-		task.cancel();
+		task.cancel(); 
 		this.wait();
 	}
 	
 	public static void main(String[] args) {
-		try {					
-			System.out.println("Program completed");
+		try {	
+			new Router(currentRouterSocket).start();
+			System.out.println("Program completed(router)");
 		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}
 

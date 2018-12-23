@@ -23,4 +23,8 @@ public interface Constants {
 	final static int NUMBER_OF_END_USERS = 4;
 	
 	final static int TIMEOUT_TIME = 7000;
+	
+	final static String END_USER = "E";
+	final static String ROUTER = "R";
+	final static String CONTROLLER = "C";
 }
