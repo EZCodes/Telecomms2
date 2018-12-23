@@ -11,7 +11,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.Timer;
 
-public class Controller extends Machine implements Constants { // TODO fix timers(probably need another thread
+public class Controller extends Machine implements Constants { // TODO fix timers(probably need another thread, fix recursion, returning null since list is null from start
 	
 	private HashMap<String, ArrayList<String>> routingInfo; // Router -> it's surroundings
 	private HashMap<String,InetSocketAddress> connectedRouters;
@@ -27,7 +27,6 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 		listener.go();
 	}
 	/**
-	 * 
 	 * @param destination
 	 * @return HashMap where Router->Next hop socket number(from that router)
 	 */
@@ -36,6 +35,8 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 		
 		HashMap<String,String> precedessors = new HashMap<String,String>();
 		ArrayList<String> queue = new ArrayList<String>();
+		// maybe add current router to the queue?
+		
 		precedessors = calculateRoutRecursive(destination,startRouter, precedessors, queue);
 		
 		String value;
@@ -86,15 +87,19 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 				String routerNumber = "R" + Integer.toString((routerPort%STARTING_ROUTER_PORT)+1); // getting number of router
 				connectedRouters.put(routerNumber, routerAddress);
 				System.out.println("Connection with router: "+ routerNumber + ", established!");
-				DatagramPacket ack = new PacketContent(HELLACK_HEADER).toDatagramPacket();
-				sendPacket(ack,routerAddress);
+				//DatagramPacket ack = new PacketContent(HELLACK_HEADER).toDatagramPacket();
+				//sendPacket(ack,routerAddress);
+				DatagramPacket featureRequest = new PacketContent(FEATURE_REQUEST_HEADER).toDatagramPacket();
+				sendPacket(featureRequest,routerAddress);
+				System.out.println("Feature request sent!");
+				
 			}
 			else if(recievedString.contains(INFOREQUEST_HEADER))
 			{
 				InetSocketAddress routerAddress = (InetSocketAddress) recievedPacket.getSocketAddress();
 				int routerPort = routerAddress.getPort();
 				String routerNumber = "R" + Integer.toString((routerPort%STARTING_ROUTER_PORT)+1);
-				if(routerAddress.equals(connectedRouters.get(routerNumber))) // small protection if external or dead router will want the info
+				if(routerPort == connectedRouters.get(routerNumber).getPort()) // small protection if external or dead router will want the info
 				{
 					String finalDestination = packetInformation[1];
 					HashMap<String,String> map = calculateRout(finalDestination, routerNumber); 
@@ -102,10 +107,10 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 					{
 						DatagramPacket packetToSend = new PacketContent(INFO_HEADER+"0|").toDatagramPacket();		
 						sendPacket(packetToSend,routerAddress);	
-						TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
-						timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-						this.wait();
-						timer.cancel();
+					//	TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
+					//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
+					//	this.wait();
+					//	timer.cancel();
 					}
 					else {
 						String[] routers = map.keySet().toArray(new String[map.size()]); // getting keys out of map to iterate through them
@@ -115,10 +120,10 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 							String nextHop = map.get(routers[i]);
 							DatagramPacket packetToSend = new PacketContent(INFO_HEADER+finalDestination+"|"+nextHop+"|").toDatagramPacket();		
 							sendPacket(packetToSend,destination);	
-							TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
-							timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-							this.wait();
-							timer.cancel();
+						//	TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
+						//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
+						//	this.wait();
+						//	timer.cancel();
 						}
 					}
 				}

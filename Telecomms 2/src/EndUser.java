@@ -75,16 +75,16 @@ public class EndUser extends Machine implements Constants {
 			System.out.println("If you wish to send a message please type it here, if you wish to quit then type 'q'");
 			inputString = input.nextLine();
 			if(!inputString.equals("q")) {
-				System.out.println("Which user you wih to send this to?");
+				System.out.println("Which user you wish to send this to?");
 				String destinationString = input.nextLine();
 				inputString = SEND_HEADER +destinationString + "|" + inputString + "|"; // adding '|' at the end for proper parsing
 				packetToSend = new PacketContent(inputString).toDatagramPacket();
 				InetSocketAddress destination = neighbouringRouter; 
 				sendPacket(packetToSend, destination);
-				TimeoutTimer task = new TimeoutTimer(this,packetToSend, destination);
-				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-				this.wait();
-				timer.cancel();	
+			//	TimeoutTimer task = new TimeoutTimer(this,packetToSend, destination);
+			//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
+			//	this.wait();
+			//	timer.cancel();	
 			}
 		}while(!inputString.equals("q"));
 		input.close();

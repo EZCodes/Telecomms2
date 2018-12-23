@@ -27,7 +27,6 @@ public class Router extends Machine implements Constants { // TODO send feature 
 		}
 		listener.go();
 		currentRouterSocket++;
-		System.out.println(currentRouterSocket);
 	}
 	
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
@@ -36,12 +35,12 @@ public class Router extends Machine implements Constants { // TODO send feature 
 			InetAddress localHost = InetAddress.getLocalHost();
 			PacketContent recievedData = new PacketContent(recievedPacket);
 			String recievedString = recievedData.toString();
-			if(recievedString.contains(HELLACK_HEADER))
+			/*if(recievedString.contains(HELLACK_HEADER))
 			{
 				System.out.println("Connected to controller succesfully!");
 				this.notify();
-			}
-			else if(recievedString.contains(SENDACK_HEADER))
+			} */
+			if(recievedString.contains(SENDACK_HEADER))
 			{
 				System.out.println("Message forwarded succesfully!");
 				this.notify();
@@ -60,15 +59,16 @@ public class Router extends Machine implements Constants { // TODO send feature 
 					outputString += this.neighbourList.endUserName+"|";
 				DatagramPacket featPacket = new PacketContent(outputString).toDatagramPacket();
 				sendPacket(featPacket,destination); // feature packet
-				TimeoutTimer task = new TimeoutTimer(this,featPacket, destination);
+				this.notify();
+			/*	TimeoutTimer task = new TimeoutTimer(this,featPacket, destination);
 				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 				this.wait();
-				timer.cancel();
+				timer.cancel(); */
 			}
 			else if(recievedString.contains(FEATACK_HEADER))
 			{
 				System.out.println("Feature exchange completed succesfully!");
-				this.notify();
+	//			this.notify();
 			}
 			else if(recievedString.contains(INFO_HEADER))
 			{
@@ -87,19 +87,19 @@ public class Router extends Machine implements Constants { // TODO send feature 
 			}
 			else if(recievedString.contains(SEND_HEADER))
 			{
-				InetSocketAddress destination = (InetSocketAddress) recievedPacket.getSocketAddress();
-				if(this.neighbourList.endUserSocket == null)
-					this.neighbourList.endUserSocket = destination;
+				InetSocketAddress source = (InetSocketAddress) recievedPacket.getSocketAddress();
+				if(this.neighbourList.endUserSocket == null)		// TODO gets user socket if any, flawed method
+					this.neighbourList.endUserSocket = source; 
 				String[] recievedInfo = recievedString.split("[|]");
 				if(!routingTable.containsKey(recievedInfo[1]))
 				{
-					DatagramPacket infoRequest = new PacketContent(INFOREQUEST_HEADER + "|" +recievedInfo[1]+ "|" ).toDatagramPacket();
+					DatagramPacket infoRequest = new PacketContent(INFOREQUEST_HEADER+recievedInfo[1]+ "|" ).toDatagramPacket();
 					InetSocketAddress controller = new InetSocketAddress(localHost,CONTROLLER_SOCKET);
 					sendPacket(infoRequest,controller);
-					TimeoutTimer task = new TimeoutTimer(this,infoRequest, destination);
-					timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-					this.wait();
-					timer.cancel();
+				//	TimeoutTimer task = new TimeoutTimer(this,infoRequest, destination);
+				//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
+				//	this.wait();
+				//	timer.cancel();
 				}
 				String nextDestRouter = routingTable.get(recievedInfo[1]); 
 				if(nextDestRouter == null)
@@ -112,13 +112,13 @@ public class Router extends Machine implements Constants { // TODO send feature 
 					InetSocketAddress nextHop = new InetSocketAddress(localHost,nextRouterSocket);
 					sendPacket(recievedPacket,nextHop);
 				}
-				TimeoutTimer task = new TimeoutTimer(this,recievedPacket, destination);
-				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-				this.wait();
-				timer.cancel();			
+		//		TimeoutTimer task = new TimeoutTimer(this,recievedPacket, destination);
+		//		timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
+		//		this.wait();
+		//		timer.cancel();			
 				System.out.println("Send request completed!");
 				DatagramPacket sendack = new PacketContent(SENDACK_HEADER).toDatagramPacket();				
-				sendPacket(sendack,destination);
+				sendPacket(sendack,source);
 				
 			}
 			else
@@ -141,8 +141,7 @@ public class Router extends Machine implements Constants { // TODO send feature 
 	
 	
 	public synchronized void start() throws Exception { // hardcoded address of controller
-		Timer timer = new Timer(true);
-		
+		Timer timer = new Timer(true);		
 		DatagramPacket connectPacket = new PacketContent(HELLO_HEADER).toDatagramPacket();
 		InetAddress localHost;
 		localHost = InetAddress.getLocalHost();
@@ -152,7 +151,7 @@ public class Router extends Machine implements Constants { // TODO send feature 
 		TimeoutTimer task = new TimeoutTimer(this,connectPacket, destination);
 		timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 		this.wait();
-		task.cancel(); 
+		task.cancel();
 		this.wait();
 	}
 	
