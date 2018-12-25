@@ -14,7 +14,7 @@ public class Network implements Constants {
 				// set a delay since creation of network is in separate threads which are non-deterministic and in this case routers 
 				// need to have sockets one after another
 				TimeoutTimer delay = new TimeoutTimer(this,null,null); 
-				timer.schedule(delay,1500);
+				timer.schedule(delay,WAIT_TIME);
 				synchronized(this) {
 					this.wait();		
 				}
@@ -49,7 +49,7 @@ public class Network implements Constants {
 			return new RoutingInfo(connectionOne,connectionTwo,connectionThree,endUserName);
 		}
 		if(socketNumber==STARTING_ROUTER_PORT+1) {
-			String[] connectionOne = {"R1", Integer.toString(STARTING_ROUTER_PORT+1)};
+			String[] connectionOne = {"R1", Integer.toString(STARTING_ROUTER_PORT)};
 			String[] connectionTwo = {"R3", Integer.toString(STARTING_ROUTER_PORT+2)};
 			return new RoutingInfo(connectionOne,connectionTwo,null);
 		}

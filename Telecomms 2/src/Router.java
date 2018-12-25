@@ -3,11 +3,10 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Timer;
 
-public class Router extends Machine implements Constants { // TODO send feature after hellack fix timers(another thread) 
+public class Router extends Machine implements Constants { 
 	
 	static int currentRouterSocket = STARTING_ROUTER_PORT;
 	
@@ -30,20 +29,22 @@ public class Router extends Machine implements Constants { // TODO send feature 
 	}
 	
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
-		try {
-			Timer timer = new Timer(true);			
+		try {		
 			InetAddress localHost = InetAddress.getLocalHost();
 			PacketContent recievedData = new PacketContent(recievedPacket);
 			String recievedString = recievedData.toString();
-			/*if(recievedString.contains(HELLACK_HEADER))
+			if(recievedString.contains(HELLO_HEADER)) // should recieve hello only from end users
 			{
-				System.out.println("Connected to controller succesfully!");
-				this.notify();
-			} */
-			if(recievedString.contains(SENDACK_HEADER))
+				InetSocketAddress endUser = (InetSocketAddress) recievedPacket.getSocketAddress();
+				DatagramPacket ack = new PacketContent(HELLACK_HEADER).toDatagramPacket();
+				this.neighbourList.endUserSocket = endUser;
+				sendPacket(ack,endUser);
+				System.out.println("Connection with end user established!");
+			} 
+			else if(recievedString.contains(SENDACK_HEADER))
 			{
 				System.out.println("Message forwarded succesfully!");
-				this.notify();
+				//this.notify();
 			}
 			else if(recievedString.contains(FEATURE_REQUEST_HEADER))
 			{
@@ -83,23 +84,19 @@ public class Router extends Machine implements Constants { // TODO send feature 
 				DatagramPacket ackPacket = new PacketContent(INFOACK_HEADER).toDatagramPacket();
 				System.out.println("Routing Information recieived!");
 				sendPacket(ackPacket,destination);				 
-				this.notify();
+				//this.notify();
 			}
 			else if(recievedString.contains(SEND_HEADER))
 			{
+				Timer timer = new Timer(true);
 				InetSocketAddress source = (InetSocketAddress) recievedPacket.getSocketAddress();
-				if(this.neighbourList.endUserSocket == null)		// TODO gets user socket if any, flawed method
-					this.neighbourList.endUserSocket = source; 
 				String[] recievedInfo = recievedString.split("[|]");
 				if(!routingTable.containsKey(recievedInfo[1]))
 				{
 					DatagramPacket infoRequest = new PacketContent(INFOREQUEST_HEADER+recievedInfo[1]+ "|" ).toDatagramPacket();
 					InetSocketAddress controller = new InetSocketAddress(localHost,CONTROLLER_SOCKET);
 					sendPacket(infoRequest,controller);
-				//	TimeoutTimer task = new TimeoutTimer(this,infoRequest, destination);
-				//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-				//	this.wait();
-				//	timer.cancel();
+					Thread.sleep(WAIT_TIME);// small wait to get the routing information if any
 				}
 				String nextDestRouter = routingTable.get(recievedInfo[1]); 
 				if(nextDestRouter == null)
@@ -107,9 +104,15 @@ public class Router extends Machine implements Constants { // TODO send feature 
 					System.out.println("Destination not found, dropping packet.");
 				}
 				else {
-					String nextDestSocket = neighbourList.getSocketNumber(nextDestRouter);
-					int nextRouterSocket = Integer.parseInt(nextDestSocket);
-					InetSocketAddress nextHop = new InetSocketAddress(localHost,nextRouterSocket);
+					InetSocketAddress nextHop;
+					if(nextDestRouter.equals(neighbourList.endUserName))
+						nextHop = neighbourList.endUserSocket;
+					else 
+					{
+						String nextDestSocket = neighbourList.getSocketNumber(nextDestRouter);
+						int nextRouterSocket = Integer.parseInt(nextDestSocket);
+						nextHop = new InetSocketAddress(localHost,nextRouterSocket);
+					}
 					sendPacket(recievedPacket,nextHop);
 				}
 		//		TimeoutTimer task = new TimeoutTimer(this,recievedPacket, destination);
@@ -123,7 +126,7 @@ public class Router extends Machine implements Constants { // TODO send feature 
 			}
 			else
 			{
-				System.out.println("Unknown Packet recieved");
+				System.out.println("Unknown Packet recieved on router");
 				System.out.println(recievedString);
 			}
 
@@ -140,7 +143,7 @@ public class Router extends Machine implements Constants { // TODO send feature 
 	}
 	
 	
-	public synchronized void start() throws Exception { // hardcoded address of controller
+	public synchronized void start() throws Exception {
 		Timer timer = new Timer(true);		
 		DatagramPacket connectPacket = new PacketContent(HELLO_HEADER).toDatagramPacket();
 		InetAddress localHost;

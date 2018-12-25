@@ -25,8 +25,8 @@ public class TimeoutTimer extends TimerTask {
 		Network network;
 
 		if(machine instanceof Router)
-		{
-			router = (Router) machine;
+		{		
+			router = (Router) machine;	
 			router.sendPacket(packet, address);
 		}
 		else if(machine instanceof Controller)

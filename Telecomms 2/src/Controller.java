@@ -1,17 +1,12 @@
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.Timer;
 
-public class Controller extends Machine implements Constants { // TODO fix timers(probably need another thread, fix recursion, returning null since list is null from start
+public class Controller extends Machine implements Constants { 
 	
 	private HashMap<String, ArrayList<String>> routingInfo; // Router -> it's surroundings
 	private HashMap<String,InetSocketAddress> connectedRouters;
@@ -35,26 +30,41 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 		
 		HashMap<String,String> precedessors = new HashMap<String,String>();
 		ArrayList<String> queue = new ArrayList<String>();
-		// maybe add current router to the queue?
+		
+		
+		
+		ArrayList<String> neighbours = routingInfo.get(startRouter);
+		for(int i=0;neighbours != null && i<neighbours.size(); i++ ) 
+		{
+			if(!precedessors.containsKey(neighbours.get(i)))
+				precedessors.put(neighbours.get(i), startRouter);
+			queue.add(neighbours.get(i));
+		}
+		String nextMachine;
+		do {
+		nextMachine = queue.remove(0);
+		}while(precedessors.containsValue(nextMachine)); // if visited go next
+	
+		
 		
 		precedessors = calculateRoutRecursive(destination,startRouter, precedessors, queue);
 		
 		String value;
 		String key = destination;
 		
-		while(key != startRouter)
+		while(!key.equals(startRouter))
 		{
-			value = precedessors.get(destination);
+			value = precedessors.get(key);
 			map.put(value, key);
 			key = value;
 		}
 		return map;
 	}
 	HashMap<String,String> calculateRoutRecursive( String destination, String currentMachine, HashMap<String,String> precedessor, ArrayList<String> queue){ //stack may overflow in extreme cases
-		if(currentMachine != destination && !queue.isEmpty())
+		if(!currentMachine.equals(destination) && !queue.isEmpty())
 		{
 			ArrayList<String> neighbours = routingInfo.get(currentMachine);
-			// sometime a current machine will be EndUser, so additional check for null is needed(inside for to less confuse with if's)
+			// sometime a current machine will be EndUser, so additional check for null is needed
 			for(int i=0;neighbours != null && i<neighbours.size(); i++ ) 
 			{
 				if(!precedessor.containsKey(neighbours.get(i)))
@@ -67,7 +77,7 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 			}while(precedessor.containsValue(nextMachine)); // if visited go next
 			return calculateRoutRecursive(destination,nextMachine, precedessor,queue);
 		}
-		else if(currentMachine == destination)
+		else if(currentMachine.equals(destination))
 		{
 			return precedessor;
 		}
@@ -75,8 +85,7 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 			return null;
 	}
 	public synchronized void onReceipt(DatagramPacket recievedPacket) {
-		try {
-			Timer timer = new Timer(true);			
+		try {	
 			PacketContent recievedData = new PacketContent(recievedPacket);
 			String recievedString = recievedData.toString();
 			String[] packetInformation = recievedString.split("[|]");
@@ -154,11 +163,11 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 			else if(recievedString.contains(INFOACK_HEADER))
 			{
 				System.out.println("Routing information successfully sent!");
-				this.notify();
+				//this.notify();
 			}
 			else
 			{
-				System.out.println("Unknown Packet recieved");
+				System.out.println("Unknown Packet recieved on controller");
 				System.out.println(recievedString);
 			}
 		}
@@ -172,7 +181,6 @@ public class Controller extends Machine implements Constants { // TODO fix timer
 		} catch (IOException e) {	e.printStackTrace(); }
 		
 	}
-	
 	
 	public synchronized void start() throws Exception {
 		System.out.println("Controller online!");
