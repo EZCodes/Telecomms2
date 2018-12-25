@@ -88,7 +88,7 @@ public class Router extends Machine implements Constants {
 			}
 			else if(recievedString.contains(SEND_HEADER))
 			{
-				Timer timer = new Timer(true);
+				//Timer timer = new Timer(true);
 				InetSocketAddress source = (InetSocketAddress) recievedPacket.getSocketAddress();
 				String[] recievedInfo = recievedString.split("[|]");
 				if(!routingTable.containsKey(recievedInfo[1]))
@@ -96,7 +96,6 @@ public class Router extends Machine implements Constants {
 					DatagramPacket infoRequest = new PacketContent(INFOREQUEST_HEADER+recievedInfo[1]+ "|" ).toDatagramPacket();
 					InetSocketAddress controller = new InetSocketAddress(localHost,CONTROLLER_SOCKET);
 					sendPacket(infoRequest,controller);
-					Thread.sleep(WAIT_TIME);// small wait to get the routing information if any
 				}
 				String nextDestRouter = routingTable.get(recievedInfo[1]); 
 				if(nextDestRouter == null)
@@ -114,15 +113,15 @@ public class Router extends Machine implements Constants {
 						nextHop = new InetSocketAddress(localHost,nextRouterSocket);
 					}
 					sendPacket(recievedPacket,nextHop);
+					System.out.println("Send request completed!");
+					DatagramPacket sendack = new PacketContent(SENDACK_HEADER).toDatagramPacket();				
+					sendPacket(sendack,source);
 				}
 		//		TimeoutTimer task = new TimeoutTimer(this,recievedPacket, destination);
 		//		timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 		//		this.wait();
 		//		timer.cancel();			
-				System.out.println("Send request completed!");
-				DatagramPacket sendack = new PacketContent(SENDACK_HEADER).toDatagramPacket();				
-				sendPacket(sendack,source);
-				
+		
 			}
 			else
 			{
@@ -151,6 +150,7 @@ public class Router extends Machine implements Constants {
 		InetSocketAddress destination = new InetSocketAddress(localHost,CONTROLLER_SOCKET);// manually set
 		sendPacket(connectPacket, destination);
 		System.out.println("Connection request sent!");
+		
 		TimeoutTimer task = new TimeoutTimer(this,connectPacket, destination);
 		timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 		this.wait();

@@ -33,7 +33,7 @@ public class EndUserInputThread extends Thread implements Constants {
 				InetSocketAddress destination = this.endUser.neighbouringRouter; 
 				this.endUser.sendPacket(packetToSend, destination);
 				
-				task = new TimeoutTimer(this,packetToSend, destination);
+				task = new TimeoutTimer(endUser,packetToSend, destination);
 				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
 				this.wait();
 				task.cancel();	
