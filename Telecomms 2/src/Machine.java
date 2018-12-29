@@ -11,7 +11,7 @@ public abstract class Machine {
 	Listener listener;
 	CountDownLatch latch;  // used for pausing
 	
-	Machine(){ // constructor
+	Machine(){ 
 		latch= new CountDownLatch(1);
 		listener= new Listener();
 		listener.setDaemon(true); // method invoked to start a thread

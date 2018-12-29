@@ -96,9 +96,7 @@ public class Controller extends Machine implements Constants {
 				String routerNumber = "R" + Integer.toString((routerPort%STARTING_ROUTER_PORT)+1); // getting number of router
 				connectedRouters.put(routerNumber, routerAddress);
 				System.out.println("Connection with router: "+ routerNumber + ", established!");
-				//DatagramPacket ack = new PacketContent(HELLACK_HEADER).toDatagramPacket();
-				//sendPacket(ack,routerAddress);
-				DatagramPacket featureRequest = new PacketContent(FEATURE_REQUEST_HEADER).toDatagramPacket();
+				DatagramPacket featureRequest = new PacketContent(FEATURE_REQUEST_HEADER).toDatagramPacket();// feat request works as ack in this case
 				sendPacket(featureRequest,routerAddress);
 				System.out.println("Feature request sent!");
 				
@@ -116,10 +114,6 @@ public class Controller extends Machine implements Constants {
 					{
 						DatagramPacket packetToSend = new PacketContent(INFO_HEADER+"0|").toDatagramPacket();		
 						sendPacket(packetToSend,routerAddress);	
-					//	TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
-					//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-					//	this.wait();
-					//	timer.cancel();
 					}
 					else {
 						String[] routers = map.keySet().toArray(new String[map.size()]); // getting keys out of map to iterate through them
@@ -129,10 +123,6 @@ public class Controller extends Machine implements Constants {
 							String nextHop = map.get(routers[i]);
 							DatagramPacket packetToSend = new PacketContent(INFO_HEADER+finalDestination+"|"+nextHop+"|").toDatagramPacket();		
 							sendPacket(packetToSend,destination);	
-						//	TimeoutTimer task = new TimeoutTimer(this,packetToSend,routerAddress);
-						//	timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-						//	this.wait();
-						//	timer.cancel();
 						}
 					}
 				}
@@ -163,7 +153,6 @@ public class Controller extends Machine implements Constants {
 			else if(recievedString.contains(INFOACK_HEADER))
 			{
 				System.out.println("Routing information successfully sent!");
-				//this.notify();
 			}
 			else
 			{

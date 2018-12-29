@@ -44,7 +44,6 @@ public class Router extends Machine implements Constants {
 			else if(recievedString.contains(SENDACK_HEADER))
 			{
 				System.out.println("Message forwarded succesfully!");
-				//this.notify();
 			}
 			else if(recievedString.contains(FEATURE_REQUEST_HEADER))
 			{
@@ -61,15 +60,10 @@ public class Router extends Machine implements Constants {
 				DatagramPacket featPacket = new PacketContent(outputString).toDatagramPacket();
 				sendPacket(featPacket,destination); // feature packet
 				this.notify();
-			/*	TimeoutTimer task = new TimeoutTimer(this,featPacket, destination);
-				timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-				this.wait();
-				timer.cancel(); */
 			}
 			else if(recievedString.contains(FEATACK_HEADER))
 			{
 				System.out.println("Feature exchange completed succesfully!");
-	//			this.notify();
 			}
 			else if(recievedString.contains(INFO_HEADER))
 			{
@@ -79,16 +73,13 @@ public class Router extends Machine implements Constants {
 					System.out.println("Information for given user is not found");
 				else {
 					routingTable.put(recievedInfo[1], recievedInfo[2]); 
-					//routingTable.put(recievedInfo[2], recievedInfo[3]) // return address;
 				}
 				DatagramPacket ackPacket = new PacketContent(INFOACK_HEADER).toDatagramPacket();
 				System.out.println("Routing Information recieived!");
 				sendPacket(ackPacket,destination);				 
-				//this.notify();
 			}
 			else if(recievedString.contains(SEND_HEADER))
 			{
-				//Timer timer = new Timer(true);
 				InetSocketAddress source = (InetSocketAddress) recievedPacket.getSocketAddress();
 				String[] recievedInfo = recievedString.split("[|]");
 				if(!routingTable.containsKey(recievedInfo[1]))
@@ -115,12 +106,9 @@ public class Router extends Machine implements Constants {
 					sendPacket(recievedPacket,nextHop);
 					System.out.println("Send request completed!");
 					DatagramPacket sendack = new PacketContent(SENDACK_HEADER).toDatagramPacket();				
-					sendPacket(sendack,source);
-				}
-		//		TimeoutTimer task = new TimeoutTimer(this,recievedPacket, destination);
-		//		timer.schedule(task, TIMEOUT_TIME,TIMEOUT_TIME); // 7 sec timeout timer
-		//		this.wait();
-		//		timer.cancel();			
+					sendPacket(sendack,source); // ack here, so that if no routing info initially
+					// then user will re-send and it will go through
+				}		
 		
 			}
 			else

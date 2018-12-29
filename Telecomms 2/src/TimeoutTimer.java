@@ -24,7 +24,7 @@ public class TimeoutTimer extends TimerTask {
 		EndUser endUser;
 		Network network;
 
-		if(machine instanceof Router)
+		if(machine instanceof Router)// resend the packet
 		{		
 			router = (Router) machine;	
 			router.sendPacket(packet, address);
@@ -39,7 +39,7 @@ public class TimeoutTimer extends TimerTask {
 			endUser = (EndUser) machine;
 			endUser.sendPacket(packet, address);
 		}
-		else if(machine instanceof Network)
+		else if(machine instanceof Network) // if network just wait 1s
 		{
 			network = (Network) machine;
 			synchronized(network)
