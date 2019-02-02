@@ -33,7 +33,7 @@ public class Network implements Constants {
 	}
 	/**
 	 * This method defines the network topology. Instead of hardcoding every rout in the controller
-	 * I'm using similar approach to the Distance vector routing and define neighbour of every router
+	 * I'm using similar approach to the Link State routing and define neighbour of every router
 	 * out of which controller can calculate the best rout. With this, instead of hardcoding N+N-1+..+1 routes
 	 * where N is number of End users, we hardcode M routers.
 	 * It's inefficient if we have low amount of End Users but a lot of routers, but very efficient if we have
